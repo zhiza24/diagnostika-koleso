@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Диагностика: Колесо + Архитектура личности</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --accent:#38bdf8; --text:#f1f5f9; --muted:#94a3b8; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+  .container { max-width:680px; margin:0 auto; padding:16px 12px 120px; }
+  h1 { font-size:1.45rem; margin:8px 0 10px; }
+  h2 { font-size:1.18rem; color:var(--accent); margin:16px 0 8px; }
+  .intro, .card { background:var(--card); padding:16px; border-radius:14px; margin-bottom:12px; }
+  .q-title { font-weight:600; margin-bottom:6px; font-size:1.04rem; }
+  .hint { color:var(--muted); font-size:0.84rem; margin-bottom:8px; }
+  .option { display:block; padding:13px 12px; margin:5px 0; background:#334155; border-radius:12px; border:2px solid transparent; }
+  .option.selected { background:#0c4a6e; border-color:#7dd3fc; }
+  button { background:var(--accent); color:#0f172a; border:none; padding:15px; font-size:1.05rem; font-weight:600; border-radius:12px; width:100%; margin-top:6px; }
+  button.secondary { background:#475569; color:#fff; }
+  .progress { height:6px; background:#334155; border-radius:3px; margin:8px 0 12px; }
+  .progress-bar { height:100%; background:var(--accent); width:0%; transition:width .25s; }
+  .hidden { display:none; }
+  .msg { color:#fbbf24; font-size:0.88rem; margin:6px 0; min-height:1.2em; }
+  .score { font-weight:600; }
+  .low { color:#f87171; } .mid { color:#fbbf24; } .high { color:#34d399; }
+  footer { text-align:center; color:var(--muted); font-size:0.8rem; margin-top:20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Диагностика: Колесо баланса + Архитектура личности</h1>
+  <div class="intro">Отвечайте быстро, первой реакцией. Выбирайте всё, что откликается. Здесь нет правильных ответов — мы смотрим, как бессознательное обычно интерпретирует жизнь и где сейчас реальность.</div>
+
+  <div id="test">
+    <h2 id="stepTitle">Шаг</h2>
+    <div class="progress"><div class="progress-bar" id="prog"></div></div>
+    <div id="steps"></div>
+    <p id="msg" class="msg">Выберите всё, что откликается.</p>
+    <button id="nextBtn" onclick="nextStep()">Далее</button>
+    <button class="secondary hidden" id="backBtn" onclick="prevStep()">Назад</button>
+  </div>
+
+  <div id="results" class="hidden"></div>
+  <footer>Диагностический инструмент • Архитектура личности / Майя Явь</footer>
+</div>
+
+<script>
+const steps = [
+  {
+    type: "projective",
+    title: "Представьте утро через 2–3 года. Вы просыпаетесь спокойно. Что из этого ближе?",
+    hint: "Можно несколько.",
+    options: [
+      {t:"Тело лёгкое, есть энергия", tags:["здоровье_желаемое"]},
+      {t:"Я знаю, куда иду, и это моё", tags:["смысл"]},
+      {t:"Рядом люди, с которыми тепло", tags:["близость"]},
+      {t:"Есть время не торопиться", tags:["ритм"]},
+      {t:"Я делаю то, что имеет смысл", tags:["реализация"]},
+      {t:"Денег достаточно, чтобы не думать о них постоянно", tags:["финансы_желаемое"]},
+      {t:"Я могу выбирать, а не только реагировать", tags:["свобода"]},
+      {t:"Жизнь имеет вкус, а не только список дел", tags:["полнота"]}
+    ]
+  },
+  {
+    type: "projective",
+    title: "Когда вы представляете, что в какой-то сфере стало заметно лучше, что внутри чаще возникает первым?",
+    hint: "Это про вторичные выгоды. Можно несколько.",
+    options: [
+      {t:"А вдруг потом придётся удерживать и станет тяжелее", tags:["вторичная_усилие"]},
+      {t:"Если станет хорошо — я потеряю право жаловаться или отдыхать", tags:["вторичная_право"]},
+      {t:"Боюсь, что тогда от меня начнут ждать ещё больше", tags:["вторичная_ожидания"]},
+      {t:"Странное ощущение, что «мне нельзя слишком хорошо»", tags:["запрет"]},
+      {t:"Появляется «а вдруг я этого не заслуживаю»", tags:["самокритика"]},
+      {t:"Страх, что я стану другой и потеряю что-то привычное", tags:["идентичность"]},
+      {t:"Ничего особенного, просто хочется легче", tags:["чистое_желание"]}
+    ]
+  },
+  {
+    type: "projective",
+    title: "Вы долго вкладывались, но результата пока нет. Что возникает внутри первым?",
+    options: [
+      {t:"Ну вот… опять не так, как надеялась", tags:["разочарование"]},
+      {t:"Наверное, я где-то ошиблась", tags:["самокритика"]},
+      {t:"Самое неприятное — будто никто не замечает, сколько я вложила", tags:["невидимость"]},
+      {t:"Почему мне опять приходится сложнее, чем другим?", tags:["борьба"]},
+      {t:"Ладно, разберусь сама", tags:["одиночная_опора"]},
+      {t:"Нужно понять, где сбой, и вернуть контроль", tags:["контроль"]},
+      {t:"Значит, старый способ больше не подходит", tags:["создатель"]}
+    ]
+  },
+  {
+    type: "projective",
+    title: "Если честно: что ваше текущее состояние позволяет не делать или не чувствовать?",
+    hint: "Ключ к вторичным выгодам.",
+    options: [
+      {t:"Не рисковать и не сталкиваться с возможным разочарованием", tags:["защита_разочарование"]},
+      {t:"Не менять привычный образ себя", tags:["защита_идентичность"]},
+      {t:"Не просить и не зависеть от других", tags:["одиночная_опора"]},
+      {t:"Не чувствовать, что я «недостаточно»", tags:["защита_самокритика"]},
+      {t:"Не терять контроль", tags:["контроль"]},
+      {t:"Не выделяться и не быть по-настоящему увиденной", tags:["невидимость"]},
+      {t:"Ничего особенного не защищает", tags:["нет"]}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Здоровье и Энергия",
+    title: "Здоровье и Энергия. Что ближе к вашей реальной жизни сейчас?",
+    options: [
+      {t:"Живу на пределе, тело постоянно сигналит, энергии нет даже на базовое", score:1},
+      {t:"Энергия волнообразная: утром еле раскачиваюсь, к вечеру выжатость, держусь на силе воли", score:4},
+      {t:"Энергичность стабильная, ресурсы восстанавливаются вовремя, серьёзных просадок нет", score:7},
+      {t:"Высокий жизненный тонус, лёгкость в теле, ресурсное состояние", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Здоровье и Энергия",
+    title: "Питание и восстановление.",
+    options: [
+      {t:"Пищевой хаос, ем от стресса, срывы, нет системы", score:1},
+      {t:"Пытаюсь контролировать, но при стрессе скатываюсь в старое", score:4},
+      {t:"Осознанное регулярное питание, тело получает что нужно", score:7},
+      {t:"Чистый баланс без тревоги вокруг еды, питание поддерживает энергию", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Финансы",
+    title: "Финансы. Доход и ощущение стабильности.",
+    options: [
+      {t:"Постоянный дефицит, живу от поступления до поступления", score:1},
+      {t:"Доход хаотичный, нет уверенности в завтрашнем дне", score:4},
+      {t:"Стабильный доход, покрывает потребности, есть небольшая подушка", score:7},
+      {t:"Растущий поток, есть капитал и чувство финансовой независимости", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Финансы",
+    title: "Отношение к деньгам и планирование.",
+    options: [
+      {t:"Стыд, внутренний конфликт, деньги утекают", score:1},
+      {t:"Хочу больше, но старые сценарии тормозят, действий мало", score:4},
+      {t:"Вижу прогресс, откладываю и изучаю инструменты", score:7},
+      {t:"Уверенность из самоценности, работающая стратегия", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Карьера / Дело",
+    title: "Работа / дело. Удовлетворённость и смысл.",
+    options: [
+      {t:"Делаю потому что надо, огня нет, не на своём месте", score:1},
+      {t:"Есть интерес, но много напряжения и «надо доказывать»", score:4},
+      {t:"В целом нравится, есть рост и баланс", score:7},
+      {t:"Дело наполняет, соответствует ценностям, я расту", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Отношения",
+    title: "Отношения и близость.",
+    options: [
+      {t:"Близости почти нет или она источник напряжения и страха", score:1},
+      {t:"Хочу близости, но когда она появляется — тревожно, или тепла мало", score:4},
+      {t:"Есть тепло и поддержка, в целом удовлетворена", score:7},
+      {t:"Глубокая близость без потери себя, взаимное видение", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Семья",
+    title: "Семья.",
+    options: [
+      {t:"Много старых обид, напряжения, поддержки мало", score:1},
+      {t:"Каждый сам по себе или частая вина/обязанность", score:4},
+      {t:"В целом нормально: есть тепло и сложности, умеем решать", score:7},
+      {t:"Семья — тыл, взаимная поддержка и принятие", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Окружение",
+    title: "Друзья и окружение.",
+    options: [
+      {t:"Знакомых много, своих почти нет, общение истощает", score:1},
+      {t:"Есть контакты, но глубины мало, часто устаю", score:4},
+      {t:"Есть несколько людей, с которыми можно быть собой", score:7},
+      {t:"Окружение вдохновляет и поддерживает", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Личностный рост",
+    title: "Личностный рост и реализация.",
+    options: [
+      {t:"Потенциал есть, но почти не проявляется, откладываю", score:1},
+      {t:"Энтузиазм сменяется «ещё не готова», рост через напряжение", score:4},
+      {t:"Регулярно изучаю и применяю, понимаю свои паттерны", score:7},
+      {t:"Активно проявляюсь, создаю своё, рост естественный", score:10}
+    ]
+  },
+  {
+    type: "sphere",
+    sphere: "Отдых и удовольствие",
+    title: "Отдых и удовольствие.",
+    options: [
+      {t:"Отдыхаю только когда сил нет, или уходит в скроллинг, вина", score:1},
+      {t:"Вроде отдыхаю, но мыслями в делах", score:4},
+      {t:"Умею переключаться и восстанавливаться", score:7},
+      {t:"Глубокий отдых, наполняющие занятия, без тревоги", score:10}
+    ]
+  }
+];
+
+let idx = 0;
+const answers = [];
+
+function render() {
+  const s = steps[idx];
+  document.getElementById('stepTitle').textContent = `Шаг ${idx+1} из ${steps.length}`;
+  const el = document.getElementById('steps');
+  let html = `<div class="card"><div class="q-title">${s.title}</div>`;
+  if (s.hint) html += `<div class="hint">${s.hint}</div>`;
+  s.options.forEach((opt, i) => {
+    const sel = answers[idx] && answers[idx].some(a => a.t === opt.t) ? 'selected' : '';
+    html += `<div class="option ${sel}" data-i="${i}" onclick="this.classList.toggle('selected')">${opt.t}</div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+  document.getElementById('prog').style.width = ((idx+1)/steps.length*100)+'%';
+  document.getElementById('backBtn').classList.toggle('hidden', idx===0);
+  document.getElementById('nextBtn').textContent = idx===steps.length-1 ? 'Получить результат' : 'Далее';
+  document.getElementById('msg').textContent = 'Выберите всё, что откликается.';
+}
+
+function collect() {
+  const selected = [];
+  const opts = steps[idx].options;
+  document.querySelectorAll('#steps .option.selected').forEach(el => {
+    const i = +el.dataset.i;
+    if (opts[i]) selected.push(opts[i]);
+  });
+  return selected;
+}
+
+function nextStep() {
+  const sel = collect();
+  if (sel.length === 0) {
+    document.getElementById('msg').textContent = 'Выберите хотя бы один вариант.';
+    return;
+  }
+  answers[idx] = sel;
+  if (idx < steps.length-1) {
+    idx++;
+    render();
+    window.scrollTo(0,0);
+  } else {
+    showResult();
+  }
+}
+
+function prevStep() {
+  if (idx > 0) { idx--; render(); }
+}
+
+function showResult() {
+  document.getElementById('test').classList.add('hidden');
+
+  const sphereScores = {};
+  steps.forEach((s, i) => {
+    if (s.type === 'sphere' && answers[i]) {
+      const scores = answers[i].map(a => a.score).filter(x => x);
+      if (scores.length) {
+        const avg = scores.reduce((a,b)=>a+b,0) / scores.length;
+        if (!sphereScores[s.sphere]) sphereScores[s.sphere] = [];
+        sphereScores[s.sphere].push(avg);
+      }
+    }
+  });
+
+  const tagCount = {};
+  answers.forEach((ans, i) => {
+    if (steps[i].type === 'projective' && ans) {
+      ans.forEach(a => (a.tags||[]).forEach(tag => tagCount[tag] = (tagCount[tag]||0)+1));
+    }
+  });
+
+  let html = `<div class="card"><h2>Результат</h2>`;
+
+  html += `<h3>Колесо баланса (текущая реальность)</h3>`;
+  Object.keys(sphereScores).forEach(sph => {
+    const avg = sphereScores[sph].reduce((a,b)=>a+b,0) / sphereScores[sph].length;
+    const rounded = Math.round(avg * 10) / 10;
+    const cls = rounded < 4.5 ? 'low' : rounded >= 7.5 ? 'high' : 'mid';
+    const comment = rounded < 4.5 ? 'провал / сильное напряжение' : rounded >= 7.5 ? 'сильная сфера' : 'средне, есть куда расти';
+    html += `<p><b>${sph}:</b> <span class="score ${cls}">${rounded}</span> — ${comment}</p>`;
+  });
+
+  html += `<h3>Что удерживает (вторичные выгоды и фоны)</h3>`;
+  const top = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if (top.length) {
+    top.forEach(([tag, c]) => html += `<p>• ${tag} (откликнулось ${c} раз)</p>`);
+  } else {
+    html += `<p>Ярко выраженных вторичных выгод в ответах не проявилось.</p>`;
+  }
+
+  html += `<p style="margin-top:14px;"><strong>Как читать:</strong> низкие сферы — места, где старый механизм (фон + вторичная выгода) уже не работает эффективно. Высокие сферы — ресурс, который можно использовать как опору для изменений.</p>`;
+  html += `</div>`;
+
+  document.getElementById('results').innerHTML = html;
+  document.getElementById('results').classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', render);
+if (document.readyState !== 'loading') render();
+</script>
+</body>
+</html>
